@@ -1,0 +1,59 @@
+# Install & Load the packages
+ 
+install.packages("googleAuthR")
+install.packages("tidyverse")
+install.packages("readr")
+ 
+library("googleAuthR")
+library("tidyverse")
+library("readr")
+ 
+# Set credentials and scope
+ 
+clientId <- "PASTE HERE YOUR CLIENT ID"
+clientSecret <- "PASTE HERE YOUR CLIENT SECRET" 
+scope <- "https://www.googleapis.com/auth/indexing"
+ 
+options("googleAuthR.client_id" = clientId, 
+        "googleAuthR.client_secret" = clientSecret, 
+        "googleAuthR.scopes.selected" = scope,
+        "googleAuthR.verbose" = 0 # Not mandatory - I just use it to debug the script
+        )
+ 
+# Google API OAuth
+ 
+gar_auth()
+ 
+# List of URLs - Daily Limit of 200 URLs 
+ 
+urls <- read_csv("~/Desktop/Your-file-name.csv")
+urls <- urls[ ,1]
+ 
+# indexingApi function - you can use the function to send requestes to the indexing API using urls vector as an input
+# It also GET the response from the API and stores it in a data frame
+ 
+indexingApi <- function(page) {
+    
+    body <-  list(
+                  url = page,
+                  type = "URL_UPDATED")
+    
+    f <- gar_api_generator("https://indexing.googleapis.com/v3/urlNotifications:publish",
+                           "POST")
+    
+    result <- f(the_body = body)
+    result <- as.data.frame(result[[6]][[1]][[2]])
+    
+    return(result)
+    
+}
+ 
+# The API responses are stored in a data frame
+ 
+APIResponse <- map_dfr(
+                      .x = urls,
+                      .f = indexingApi)
+ 
+# You can download the API responses as .csv file
+ 
+write.csv(APIResponse, "Your-file-name.csv")
